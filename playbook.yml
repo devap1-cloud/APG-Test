@@ -1,0 +1,130 @@
+---
+- name: Install Core Server Packages
+  hosts: core_servers
+  become: yes
+  remote_user: devap1
+
+  vars:
+    local_rpm_dir: "/home/devap1/apg-files"   # Location on control node
+    remote_rpm_dir: "/tmp/rpms"
+    core_packages:
+      - apg-vfa-settlement-3.19.69-1.noarch.rpm
+      - IAbsIsraelEcommerce-1.0.78-1.noarch.rpm
+      - IFirstdataMx-1.0.103-1.noarch.rpm
+      - apg-server-core-4.3.442-1.noarch.rpm
+      - IAbsIsrael-1.1.133-1.noarch.rpm
+
+  tasks:
+    - name: Create remote RPM directory
+      file:
+        path: "{{ remote_rpm_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copy Core Server RPMs
+      copy:
+        src: "{{ local_rpm_dir }}/{{ item }}"
+        dest: "{{ remote_rpm_dir }}/{{ item }}"
+      loop: "{{ core_packages }}"
+
+    - name: Install Core Server RPMs
+      yum:
+        name: "{{ remote_rpm_dir }}/{{ item }}"
+        state: present
+      loop: "{{ core_packages }}"
+
+    - name: Add Docker CE repo
+      command: >
+        dnf config-manager --add-repo
+        https://download.docker.com/linux/rhel/docker-ce.repo
+      args:
+        creates: /etc/yum.repos.d/docker-ce.repo
+
+    - name: Install Docker packages
+      dnf:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Enable and start Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add current user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+
+    - name: Copy Oracle DB Docker image tarball to target
+      copy:
+        src: /home/devap1/apg-docker-oracle-db.tar
+        dest: /tmp/apg-docker-oracle-db.tar
+        mode: '0644'
+
+    - name: Load Oracle DB Docker image from tar file
+      command: docker load -i /tmp/apg-docker-oracle-db.tar
+      args:
+        creates: /var/lib/docker/image
+
+    - name: Verify Docker images
+      command: docker images
+      register: docker_images
+
+    - name: Debug - show docker images
+      debug:
+        var: docker_images.stdout_lines
+
+    - name: Ensure Oracle DB container is running
+
+      community.docker.docker_container:
+        name: apg-db-oracle
+        image: apg-docker-registry/apg-docker-oracle-db-full
+        state: started
+        restart_policy: unless-stopped
+        published_ports:
+          - "1521:1521"
+          - "2244:22"
+
+    - name: Ensure Oracle DB container is started
+      command: docker start apg-db-oracle
+      register: docker_start
+      failed_when: docker_start.rc not in [0, 304]
+
+- name: Install FIM Server Packages
+  hosts: fim_servers
+  become: yes
+  remote_user: devap1
+  vars:
+    local_rpm_dir: "/home/devap1/apg-files"
+    remote_rpm_dir: "/tmp/rpms"
+    fim_packages:
+      - wildfly-dist-18.0.0.1.Final-1.el7_9.x86_64.noarch.rpm
+      - weaver-message-broker-3.17.48-1.noarch.rpm
+      - weaver-fim-setup-rpm-1.7.21-1.noarch.rpm
+
+  tasks:
+    - name: Create remote RPM directory
+      file:
+        path: "{{ remote_rpm_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copy FIM Server RPMs
+      copy:
+        src: "{{ local_rpm_dir }}/{{ item }}"
+        dest: "{{ remote_rpm_dir }}/{{ item }}"
+      loop: "{{ fim_packages }}"
+
+    - name: Install FIM Server RPMs
+      yum:
+        name: "{{ remote_rpm_dir }}/{{ item }}"
+        state: present
+      loop: "{{ fim_packages }}"
