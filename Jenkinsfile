@@ -21,7 +21,7 @@ pipeline {
             steps {
                 sh '''
                     echo "Running Ansible playbook..."
-                    ansible-playbook -i inventory.ini playbook.yml --private-key /root/.ssh/vm_key
+                    ansible-playbook -i inventory.ini playbook.yml --private-key /var/lib/jenkins/.ssh/vm_key
                 '''
             }
         }
