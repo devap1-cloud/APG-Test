@@ -1,0 +1,38 @@
+pipeline {
+    agent any   // Runs on the Jenkins master/agent where Ansible is installed
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm  // Checks out code from the Jenkins job's repo
+            }
+        }
+
+        stage('Verify Ansible Installed') {
+            steps {
+                sh '''
+                    echo "Checking Ansible version..."
+                    ansible --version
+                '''
+            }
+        }
+
+        stage('Run Ansible Playbook') {
+            steps {
+                sh '''
+                    echo "Running Ansible playbook..."
+                    ansible-playbook -i inventory.ini playbook.yml --private-key /root/.ssh/vm_key
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Deployment completed successfully!'
+        }
+        failure {
+            echo '❌ Deployment failed. Check logs.'
+        }
+    }
+}
