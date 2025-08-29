@@ -1,0 +1,40 @@
+---
+- hosts: core_servers
+  remote_user: devap1
+  become: yes
+  vars:
+    core_services:
+      - apg-server-core-1.service
+      - IFirstdataMx.service
+      - IAbsIsrael.service
+      - IAbsIsraelEcommerce.service
+
+  tasks:
+    - name: Gather service facts (core servers)
+      ansible.builtin.service_facts:
+
+    - name: Restart failed core services
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: restarted
+      loop: "{{ core_services }}"
+      when: ansible_facts.services[item].state != "running"
+      failed_when: false
+
+- hosts: fim_servers
+  remote_user: devap1
+  become: yes
+  vars:
+    fim_services:
+      - fims-instance-1.service
+
+  tasks:
+    - name: Gather service facts (fim servers)
+      ansible.builtin.service_facts:
+
+    - name: Restart failed fim services
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: restarted
+      loop: "{{ fim_services }}"
+      when: ansible_facts.services[item].state != "running"
