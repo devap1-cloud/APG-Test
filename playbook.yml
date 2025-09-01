@@ -194,3 +194,34 @@
         name: "{{ remote_rpm_dir }}/{{ item }}"
         state: present
       loop: "{{ be_packages }}"
+
+- name: Install REPORT Server Packages
+  hosts: report_servers
+  become: yes
+  remote_user: devap1
+
+  vars:
+    local_rpm_dir: "/home/devap1/apg-files"   # Location on control node
+    remote_rpm_dir: "/tmp/rpms"
+    report_packages:
+      - wildfly-dist-18.0.0.1.Final-1.el7_9.x86_64.rpm
+      - gmp-report-resources-1.21.91-1.noarch.rpm
+      - report-viewer-4.10.50-1.noarch.rpm
+  tasks:
+    - name: Create remote RPM directory
+      file:
+        path: "{{ remote_rpm_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Copy report Server RPMs
+      copy:
+        src: "{{ local_rpm_dir }}/{{ item }}"
+        dest: "{{ remote_rpm_dir }}/{{ item }}"
+      loop: "{{ report_packages }}"
+
+    - name: Install report Server RPMs
+      yum:
+        name: "{{ remote_rpm_dir }}/{{ item }}"
+        state: present
+      loop: "{{ report_packages }}"
