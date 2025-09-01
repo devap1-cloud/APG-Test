@@ -137,7 +137,7 @@
   vars:
     local_rpm_dir: "/home/devap1/apg-files"   # Location on control node
     remote_rpm_dir: "/tmp/rpms"
-    core_packages:
+    ws_packages:
       - wildfly-dist-18.0.0.1.Final-1.el7_9.x86_64.rpm
       - apgws-1.21.188-1.noarch.rpm
 
@@ -168,7 +168,7 @@
   vars:
     local_rpm_dir: "/home/devap1/apg-files"   # Location on control node
     remote_rpm_dir: "/tmp/rpms"
-    core_packages:
+    be_packages:
       - wildfly-dist-18.0.0.1.Final-1.el7_9.x86_64.rpm
       - weaver-fim-setup-rpm-1.7.21-1.noarch.rpm
       - weaver-fim-ugp-ndata-1.13.150-1.noarch.rpm
